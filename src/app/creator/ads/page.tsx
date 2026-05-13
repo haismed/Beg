@@ -45,9 +45,14 @@ export default function CreatorAdsDashboard() {
   const handleApproveAndPublish = async (placement: any) => {
     if (!user ||!userData) return;
 
+    // Security: Check Premium Hashtag
     if (placement.campaignType === "PREMIUM" && placement.requiredHashtag) {
        if (!placement.adContent.toLowerCase().includes(placement.requiredHashtag.toLowerCase())) {
-          toast({ variant: "destructive", title: "محتوى مخالف", description: "الإعلان الممول Premium يجب أن يحتوي على الهاشتاق المطلوب." });
+          toast({
+            variant: "destructive",
+            title: "Invalid Content",
+            description: "Premium sponsored ads must include the required hashtag."
+          });
           return;
        }
     }
@@ -56,8 +61,9 @@ export default function CreatorAdsDashboard() {
 
     setActionLoading(placement.id);
     try {
+      // 1. Create Post with extracted hashtags
       const postDoc = await addDoc(collection(db, "posts"), {
-        title: `[ممول] ${placement.adTitle}`,
+        title: `[Sponsored] ${placement.adTitle}`,
         text: placement.adContent,
         authorId: user.uid,
         authorName: userData.displayName,
@@ -73,17 +79,19 @@ export default function CreatorAdsDashboard() {
         requiredHashtag: placement.requiredHashtag || null,
         hashtags: hashtags,
         topicId: "tech",
-        topicName: "إعلان",
+        topicName: "Advertisement",
         mediaUrl: placement.mediaUrl || null,
         mediaType: placement.mediaType || "text",
         externalLink: placement.externalLink || null
       });
 
+      // 2. Update Placement
       await updateDoc(doc(db, "adPlacements", placement.id), {
         status: "published",
         publishedPostId: postDoc.id
       });
 
+      // 3. Payout: 90% to creator, 10% platform fee
       const creatorAmount = placement.price * 0.9;
       await updateDoc(doc(db, "users", user.uid), {
         totalPoints: increment(creatorAmount),
@@ -93,10 +101,17 @@ export default function CreatorAdsDashboard() {
         lockedPoints: increment(creatorAmount * 0.49)
       });
 
-      toast({ title: "تم النشر!", description: `لقد ربحت ${creatorAmount.toFixed(1)} نقطة من هذا الإعلان.` });
+      toast({
+        title: "Published!",
+        description: `You earned ${creatorAmount.toFixed(1)} points from this ad.`
+      });
     } catch (e) {
       console.error(e);
-      toast({ variant: "destructive", title: "خطأ", description: "فشل نشر الإعلان." });
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to publish the ad."
+      });
     } finally {
       setActionLoading(null);
     }
@@ -105,7 +120,10 @@ export default function CreatorAdsDashboard() {
   const handleReject = async (placementId: string) => {
     try {
       await updateDoc(doc(db, "adPlacements", placementId), { status: "rejected" });
-      toast({ title: "تم الرفض", description: "تم رفض طلب الإعلان بنجاح." });
+      toast({
+        title: "Rejected",
+        description: "Ad request has been rejected successfully."
+      });
     } catch (e) {
       console.error(e);
     }
@@ -117,29 +135,29 @@ export default function CreatorAdsDashboard() {
   const published = placements.filter(p => p.status === "published");
 
   return (
-    <div className="max-w-2xl mx-auto px-4 pt-6 pb-24 text-right">
+    <div className="max-w-2xl mx-auto px-4 pt-6 pb-24 text-left">
       <div className="flex items-center gap-4 mb-8">
         <Link href="/profile">
           <Button variant="ghost" size="icon" className="rounded-full">
             <ArrowRight />
           </Button>
         </Link>
-        <h1 className="text-2xl font-black">لوحة المبدع</h1>
+        <h1 className="text-2xl font-black">Creator Dashboard</h1>
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-8">
         <Card className="rounded-3xl border-none bg-primary/10 overflow-hidden">
           <CardContent className="p-6">
-            <p className="text-xs font-bold text-primary mb-1">أرباح الإعلانات</p>
+            <p className="text-xs font-bold text-primary mb-1">Ad Earnings</p>
             <p className="text-3xl font-black text-primary">{(userData?.adRevenue || 0).toFixed(1)}</p>
-            <p className="text-[10px] text-primary/70 mt-1">إجمالي ما ربحته من المعلنين</p>
+            <p className="text- text-primary/70 mt-1">Total earned from advertisers</p>
           </CardContent>
         </Card>
         <Card className="rounded-3xl border-none bg-secondary/10 overflow-hidden">
           <CardContent className="p-6">
-            <p className="text-xs font-bold text-secondary mb-1">إعلانات منشورة</p>
+            <p className="text-xs font-bold text-secondary mb-1">Published Ads</p>
             <p className="text-3xl font-black text-secondary">{published.length}</p>
-            <p className="text-[10px] text-secondary/70 mt-1">حملات قمت بدعمها</p>
+            <p className="text- text-secondary/70 mt-1">Campaigns you supported</p>
           </CardContent>
         </Card>
       </div>
@@ -147,17 +165,17 @@ export default function CreatorAdsDashboard() {
       <Tabs defaultValue="pending" className="w-full">
         <TabsList className="grid w-full grid-cols-2 bg-card h-14 rounded-2xl p-1 mb-8">
           <TabsTrigger value="pending" className="rounded-xl font-bold relative">
-            طلبات جديدة
-            {pending.length > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-white text-[10px] flex items-center justify-center rounded-full font-black animate-pulse">{pending.length}</span>}
+            New Requests
+            {pending.length > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-white text- flex items-center justify-center rounded-full font-black animate-pulse">{pending.length}</span>}
           </TabsTrigger>
-          <TabsTrigger value="published" className="rounded-xl font-bold">المنشورة</TabsTrigger>
+          <TabsTrigger value="published" className="rounded-xl font-bold">Published</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pending" className="space-y-4">
           {pending.length === 0 && (
             <div className="text-center py-20 bg-muted/20 rounded-3xl border-2 border-dashed border-border">
               <Megaphone className="mx-auto text-muted-foreground opacity-20 mb-3" size={48} />
-              <p className="text-muted-foreground font-bold">لا توجد طلبات إعلان حالياً</p>
+              <p className="text-muted-foreground font-bold">No ad requests right now</p>
             </div>
           )}
           {pending.map(p => (
@@ -170,19 +188,19 @@ export default function CreatorAdsDashboard() {
                     <p className="text-xs text-muted-foreground line-clamp-2">{p.adContent}</p>
                   </div>
                   <div className="bg-primary text-white px-3 py-1 rounded-full text-xs font-black">
-                    {p.price} نقطة
+                    {p.price} points
                   </div>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" className="flex-1 rounded-xl font-bold text-destructive" onClick={() => handleReject(p.id)}>
-                    <XCircle size={16} className="ml-2" />
-                    رفض
+                    <XCircle size={16} className="mr-2" />
+                    Reject
                   </Button>
                   <Button className="flex-1 rounded-xl font-black" onClick={() => handleApproveAndPublish(p)} disabled={actionLoading === p.id}>
                     {actionLoading === p.id? <Loader2 className="animate-spin" /> : (
                       <>
-                        <CheckCircle size={16} className="ml-2" />
-                        قبول ونشر
+                        <CheckCircle size={16} className="mr-2" />
+                        Approve & Publish
                       </>
                     )}
                   </Button>
@@ -202,12 +220,12 @@ export default function CreatorAdsDashboard() {
                   </div>
                   <div>
                     <h5 className="font-bold text-sm">{p.adTitle}</h5>
-                    <p className="text-[10px] text-muted-foreground">تم النشر وحصد الأرباح</p>
+                    <p className="text- text-muted-foreground">Published and earned revenue</p>
                   </div>
                 </div>
                 <Link href={`/posts/${p.publishedPostId}`}>
                   <Button variant="ghost" size="sm" className="font-bold gap-1 text-primary">
-                    عرض المنشور
+                    View Post
                     <ArrowRight size={14} className="rotate-180" />
                   </Button>
                 </Link>
