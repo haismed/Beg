@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useAuth } from "@/context/auth-context";
@@ -9,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { Megaphone, Wallet, CheckCircle, XCircle, TrendingUp, ArrowRight, Loader2, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
@@ -35,7 +35,7 @@ export default function CreatorAdsDashboard() {
     );
 
     const unsub = onSnapshot(q, (snap) => {
-      setPlacements(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setPlacements(snap.docs.map(d => ({ id: d.id,...d.data() })));
       setLoading(false);
     });
 
@@ -43,9 +43,8 @@ export default function CreatorAdsDashboard() {
   }, [user, router]);
 
   const handleApproveAndPublish = async (placement: any) => {
-    if (!user || !userData) return;
-    
-    // Security: Check Premium Hashtag
+    if (!user ||!userData) return;
+
     if (placement.campaignType === "PREMIUM" && placement.requiredHashtag) {
        if (!placement.adContent.toLowerCase().includes(placement.requiredHashtag.toLowerCase())) {
           toast({ variant: "destructive", title: "محتوى مخالف", description: "الإعلان الممول Premium يجب أن يحتوي على الهاشتاق المطلوب." });
@@ -57,7 +56,6 @@ export default function CreatorAdsDashboard() {
 
     setActionLoading(placement.id);
     try {
-      // 1. Create Post with extracted hashtags
       const postDoc = await addDoc(collection(db, "posts"), {
         title: `[ممول] ${placement.adTitle}`,
         text: placement.adContent,
@@ -81,13 +79,11 @@ export default function CreatorAdsDashboard() {
         externalLink: placement.externalLink || null
       });
 
-      // 2. Update Placement
       await updateDoc(doc(db, "adPlacements", placement.id), {
         status: "published",
         publishedPostId: postDoc.id
       });
 
-      // 3. Payout: 90% to creator, 10% platform from the ad fee (Simplified)
       const creatorAmount = placement.price * 0.9;
       await updateDoc(doc(db, "users", user.uid), {
         totalPoints: increment(creatorAmount),
@@ -115,7 +111,7 @@ export default function CreatorAdsDashboard() {
     }
   };
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="animate-spin" /></div>;
+  if (loading) return <div className="flex items-center justify-center min-h-"><Loader2 className="animate-spin" /></div>;
 
   const pending = placements.filter(p => p.status === "pending");
   const published = placements.filter(p => p.status === "published");
@@ -145,7 +141,8 @@ export default function CreatorAdsDashboard() {
             <p className="text-3xl font-black text-secondary">{published.length}</p>
             <p className="text-[10px] text-secondary/70 mt-1">حملات قمت بدعمها</p>
           </CardContent>
-        </div>
+        </Card>
+      </div>
 
       <Tabs defaultValue="pending" className="w-full">
         <TabsList className="grid w-full grid-cols-2 bg-card h-14 rounded-2xl p-1 mb-8">
@@ -182,7 +179,7 @@ export default function CreatorAdsDashboard() {
                     رفض
                   </Button>
                   <Button className="flex-1 rounded-xl font-black" onClick={() => handleApproveAndPublish(p)} disabled={actionLoading === p.id}>
-                    {actionLoading === p.id ? <Loader2 className="animate-spin" /> : (
+                    {actionLoading === p.id? <Loader2 className="animate-spin" /> : (
                       <>
                         <CheckCircle size={16} className="ml-2" />
                         قبول ونشر
