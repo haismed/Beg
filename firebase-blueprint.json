@@ -1,0 +1,101 @@
+
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile document with full economic and privacy stats",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "username": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "bio": { "type": "string" },
+        "totalPoints": { "type": "number", "description": "Total combined digital wealth" },
+        "withdrawablePoints": { "type": "number", "description": "51% share of ad/engagement profits - withdrawal eligible" },
+        "lockedPoints": { "type": "number", "description": "49% share of ad/engagement profits - restricted for ecosystem re-circulation" },
+        "storeWallet": { "type": "number", "description": "Unified wallet for store purchases and post boosting" },
+        "isSeller": { "type": "boolean", "description": "Whether the user has activated seller mode" },
+        "storeName": { "type": "string", "description": "The name of the user's store" },
+        "storeWhatsapp": { "type": "string", "description": "The whatsapp contact for store orders" },
+        "sellerActivatedAt": { "type": "object", "description": "Timestamp of seller mode activation" },
+        "isVerified": { "type": "boolean" },
+        "isCreator": { "type": "boolean" },
+        "isAdmin": { "type": "boolean" },
+        "privacy": {
+          "type": "object",
+          "properties": {
+            "profileVisibility": { "type": "string", "enum": ["public", "friends", "private"] },
+            "showPoints": { "type": "string", "enum": ["public", "friends", "private"] },
+            "showPosts": { "type": "string", "enum": ["public", "friends", "private"] },
+            "showEarnings": { "type": "boolean" },
+            "allowFriendRequests": { "type": "boolean" }
+          }
+        },
+        "stats": {
+          "type": "object",
+          "properties": {
+            "friendsCount": { "type": "number" },
+            "postsCount": { "type": "number" },
+            "totalLikes": { "type": "number" }
+          }
+        },
+        "followedTopics": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Friendship": {
+      "title": "Friendship",
+      "description": "Bidirectional social connection between two users",
+      "type": "object",
+      "properties": {
+        "users": { "type": "array", "items": { "type": "string" } },
+        "status": { "type": "string", "enum": ["pending", "accepted", "blocked"] },
+        "requestedBy": { "type": "string" },
+        "requestedAt": { "type": "object" },
+        "acceptedAt": { "type": "object" }
+      }
+    },
+    "Post": {
+      "title": "Post",
+      "description": "Interaction posts with boosting capabilities",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "authorId": { "type": "string" },
+        "isBoosted": { "type": "boolean" },
+        "boostConfig": {
+          "type": "object",
+          "properties": {
+            "totalBudget": { "type": "number" },
+            "remainingBudget": { "type": "number" },
+            "rewardMultiplier": { "type": "number" },
+            "targetInteractions": { "type": "number" },
+            "currentInteractions": { "type": "number" },
+            "boostedAt": { "type": "object" },
+            "expiresAt": { "type": "object" }
+          }
+        }
+      }
+    }
+  },
+  "auth": {
+    "providers": ["email", "google"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile records"
+    },
+    "/friendships/{friendshipId}": {
+      "schema": "Friendship",
+      "description": "Social connections"
+    },
+    "/posts/{postId}": {
+      "schema": "Post",
+      "description": "Interaction posts"
+    }
+  }
+}
