@@ -273,9 +273,8 @@ export default function CreatorAdsDashboard() {
               Campaigns you supported
             </p>
           </CardContent>
-        </Card>
-      </div>
-
+      </Card>  
+</Card>
       <Tabs defaultValue="pending" className="w-full">
         <TabsList className="grid w-full grid-cols-2 bg-card h-14 rounded-2xl p-1 mb-8">
           <TabsTrigger
